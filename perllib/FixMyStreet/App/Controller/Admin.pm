@@ -1134,6 +1134,7 @@ sub user_edit : Path('user_edit') : Args(1) {
     }
 
     $c->forward('fetch_all_bodies');
+    $c->forward('fetch_body_areas', [ $user->from_body ]) if $user->from_body;
 
     if ( $c->get_param('submit') ) {
         $c->forward('/auth/check_csrf_token');
@@ -1167,8 +1168,9 @@ sub user_edit : Path('user_edit') : Args(1) {
         }
 
         if (!$user->from_body) {
-            # Non-staff users aren't allowed any permissions
+            # Non-staff users aren't allowed any permissions or to be in an area
             $user->user_body_permissions->delete_all;
+            $user->area_id(undef);
         } elsif ($c->stash->{available_permissions}) {
             my @all_permissions = map { keys %$_ } values %{ $c->stash->{available_permissions} };
             my @user_permissions = grep { $c->get_param("permissions[$_]") ? 1 : undef } @all_permissions;
@@ -1182,6 +1184,10 @@ sub user_edit : Path('user_edit') : Args(1) {
                     permission_type => $permission_type,
                 });
             }
+        }
+
+        if ( $user->from_body && $c->user->has_permission_to('user_assign_areas', $user->from_body->id) ) {
+            $user->area_id( $c->get_param('area_id') || undef );
         }
 
         unless ($user->email) {
@@ -1612,6 +1618,16 @@ sub fetch_all_bodies : Private {
     $c->stash->{bodies} = \@bodies;
 
     return 1;
+}
+
+sub fetch_body_areas : Private {
+    my ($self, $c, $body ) = @_;
+
+    my $areas = mySociety::MaPit::call('area/children', [ $body->body_areas->first->area_id ],
+        type => $c->cobrand->area_types_children,
+    );
+
+    $c->stash->{areas} = [ sort { strcoll($a->{name}, $b->{name}) } values %$areas ];
 }
 
 sub trim {
