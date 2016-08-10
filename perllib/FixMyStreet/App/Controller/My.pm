@@ -2,6 +2,8 @@ package FixMyStreet::App::Controller::My;
 use Moose;
 use namespace::autoclean;
 
+use JSON::MaybeXS;
+
 BEGIN { extends 'Catalyst::Controller'; }
 
 =head1 NAME
@@ -118,6 +120,31 @@ sub setup_page_data : Private {
         any_zoom  => 1,
     )
         if @$pins;
+}
+
+sub planned_change : Path('planned/change') {
+    my ($self, $c) = @_;
+    $c->forward('/auth/check_csrf_token');
+
+    my $id = $c->get_param('id');
+    $c->forward( '/report/load_problem_or_display_error', [ $id ] );
+
+    my $change = $c->get_param('change');
+    $c->detach('/page_error_403_access_denied', [])
+        unless $change && $change =~ /add|remove/;
+
+    if ($change eq 'add') {
+        $c->user->add_to_planned_reports($c->stash->{problem});
+    } elsif ($change eq 'remove') {
+        $c->user->remove_from_planned_reports($c->stash->{problem});
+    }
+
+    if ($c->get_param('ajax')) {
+        $c->res->content_type('application/json; charset=utf-8');
+        $c->res->body(encode_json({ outcome => $change }));
+    } else {
+        $c->res->redirect( $c->uri_for_action('report/display', $id) );
+    }
 }
 
 __PACKAGE__->meta->make_immutable;

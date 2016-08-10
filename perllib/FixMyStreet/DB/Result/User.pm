@@ -310,4 +310,9 @@ sub active_planned_reports {
     $self->planned_reports->search({ removed => undef });
 }
 
+sub is_planned_report {
+    my ($self, $problem) = @_;
+    return $self->active_planned_reports->find({ id => $problem->id });
+}
+
 1;
