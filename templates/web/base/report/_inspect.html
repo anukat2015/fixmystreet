@@ -48,12 +48,15 @@
           </select>
         </p>
         <p class="left">
-          <label for="problem_longitude">Longitude:</label>
-          <input type="text" name="longitude" id="problem_longitude" value="[% problem.longitude %]" readonly>
+          [% SET local_coords = problem.local_coords; %]
+          <label for="problem_easting">Easting:</label>
+          <input type="text" name="easting" id="problem_easting" value="[% local_coords.0 IF local_coords %]" readonly>
+          <input type="hidden" name="longitude" value="[% problem.longitude %]">
         </p>
         <p class="right">
-          <label for="problem_latitude">Latitude:</label>
-          <input type="text" name="latitude" id="problem_latitude" value="[% problem.latitude %]" readonly>
+          <label for="problem_northing">Northing:</label>
+          <input type="text" name="northing" id="problem_northing" value="[% local_coords.1 IF local_coords %]" readonly>
+          <input type="hidden" name="latitude" value="[% problem.latitude %]">
         </p>
         <p style="clear:both;">
           <a href="#" id="geolocate_link">Use my current location</a>,

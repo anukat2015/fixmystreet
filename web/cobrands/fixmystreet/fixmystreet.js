@@ -348,7 +348,7 @@ $.extend(fixmystreet.set_up, {
   },
 
   report_inspect_geolocation: function() {
-    if (geo_position_js.init() && $('body.report_inspect').length) {
+    if (geo_position_js.init() && $('form#report_inspect_form').length) {
         $('#geolocate_link').click(function(e) {
             var $link = $(this);
             e.preventDefault();
@@ -361,8 +361,15 @@ $.extend(fixmystreet.set_up, {
             }
             geo_position_js.getCurrentPosition(function(pos) {
                 $link.find('img').remove();
-                $("form#report_inspect_form input[name=latitude]").val(pos.coords.latitude);
-                $("form#report_inspect_form input[name=longitude]").val(pos.coords.longitude);
+                var latlon = new OpenLayers.LonLat(pos.coords.longitude, pos.coords.latitude);
+                var bng = latlon.clone().transform(
+                    new OpenLayers.Projection("EPSG:4326"),
+                    new OpenLayers.Projection("EPSG:27700") // TODO: Handle other projections
+                );
+                $("form#report_inspect_form input[name=northing]").val(bng.lat.toFixed(1));
+                $("form#report_inspect_form input[name=easting]").val(bng.lon.toFixed(1));
+                $("form#report_inspect_form input[name=latitude]").val(latlon.lat);
+                $("form#report_inspect_form input[name=longitude]").val(latlon.lon);
             }, function(err) {
                 $link.find('img').remove();
                 if (err.code == 1) { // User said no
