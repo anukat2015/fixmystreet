@@ -63,6 +63,10 @@
           or drag the pin on the map &raquo;
         </p>
         <p>
+          <label for="detailed_information">Detailed problem location:</label>
+          <textarea rows="2" name="detailed_location">[% problem.get_extra_metadata('detailed_location') | html %]</textarea>
+        </p>
+        <p>
           <label for="detailed_information">Detailed problem information:</label>
           <textarea rows="2" name="detailed_information">[% problem.get_extra_metadata('detailed_information') | html %]</textarea>
         </p>

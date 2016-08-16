@@ -320,7 +320,7 @@ sub inspect : Private {
     if ( $c->get_param('save') ) {
         $c->forward('/auth/check_csrf_token');
 
-        foreach (qw/priority detailed_information traffic_information/) {
+        foreach (qw/priority detailed_location detailed_information traffic_information/) {
             $problem->set_extra_metadata( $_ => $c->get_param($_) );
         }
 
