@@ -136,6 +136,34 @@ var fixmystreet = fixmystreet || {};
         } else {
             return 'small';
         }
+      },
+
+      admin_drag: function() {
+          var drag = new OpenLayers.Control.DragFeature( fixmystreet.markers, {
+              onComplete: function(feature, e) {
+                  var lonlat = feature.geometry.clone();
+                  lonlat.transform(
+                      fixmystreet.map.getProjectionObject(),
+                      new OpenLayers.Projection("EPSG:4326")
+                  );
+                  if (window.confirm( translation_strings.correct_position ) ) {
+                      // Store new co-ordinates
+                      document.getElementById('fixmystreet.latitude').value = lonlat.y;
+                      document.getElementById('fixmystreet.longitude').value = lonlat.x;
+                  } else {
+                      // Put it back
+                      var lat = document.getElementById('fixmystreet.latitude').value;
+                      var lon = document.getElementById('fixmystreet.longitude').value;
+                      lonlat = new OpenLayers.LonLat(lon, lat).transform(
+                          new OpenLayers.Projection("EPSG:4326"),
+                          fixmystreet.map.getProjectionObject()
+                      );
+                      fixmystreet.markers.features[0].move(lonlat);
+                  }
+              }
+          } );
+          fixmystreet.map.addControl( drag );
+          drag.activate();
       }
     };
 
