@@ -336,11 +336,20 @@ sub inspect : Private {
         if ( $problem->state ne $old_state ) {
             $c->forward( '/admin/log_edit', [ $id, 'problem', 'state_change' ] );
         }
+
+        my $valid = 1;
+        if ( !$c->forward( '/admin/report_edit_location', [ $problem ] ) ) {
+            # New lat/lon isn't valid, show an error
+            $valid = 0;
+            $c->stash->{errors} = [ _('Invalid location. New location must be covered by the same council.') ];
+        }
+
         $c->forward( '/admin/report_edit_category', [ $problem ] );
 
-        $problem->update;
-
-        $c->res->redirect( $c->uri_for( '/report', $problem->id, 'inspect' ) );
+        if ($valid) {
+            $problem->update;
+            $c->res->redirect( $c->uri_for( '/report', $problem->id, 'inspect' ) );
+        }
     }
 };
 
