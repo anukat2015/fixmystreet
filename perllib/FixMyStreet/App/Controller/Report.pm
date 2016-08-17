@@ -336,24 +336,7 @@ sub inspect : Private {
         if ( $problem->state ne $old_state ) {
             $c->forward( '/admin/log_edit', [ $id, 'problem', 'state_change' ] );
         }
-        if ((my $category = $c->get_param('category')) ne $problem->category) {
-            $problem->category($category);
-            my @contacts = grep { $_->category eq $problem->category } @{$c->stash->{contacts}};
-            my $bs = join( ',', map { $_->body_id } @contacts );
-            $problem->bodies_str($bs);
-            # TODO: It's possible to assign a category belonging to a district
-            # council, meaning a 404 when the page is reloaded because the
-            # problem is no longer included in the current cobrand's
-            # problem_restriction.
-            # See mysociety/fixmystreetforcouncils#44
-            # We could
-            #  a) only allow the current body's categories to be chosen,
-            #  b) show a warning about the impending change of body
-            #  c) bounce the user to the report page on fms.com
-            # Not too worried about this right now, as it forms part of a bigger
-            # concern outlined in the above ticket and
-            # mysociety/fixmystreetforcouncils#17
-        }
+        $c->forward( '/admin/report_edit_category', [ $problem ] );
 
         $problem->update;
 
