@@ -269,6 +269,25 @@ var fixmystreet = fixmystreet || {};
         fixmystreet.markers.refresh({force: true});
     }
 
+    function setup_inspector_marker_drag() {
+        // On the 'inspect report' page the pin is draggable, so we need to
+        // update the easting/northing fields when it's dragged.
+        if (!$('form#report_inspect_form').length) {
+            // Not actually on the inspect report page
+            return;
+        }
+        fixmystreet.maps.admin_drag(function(lonlat) {
+            var bng = lonlat.clone().transform(
+                new OpenLayers.Projection("EPSG:4326"),
+                new OpenLayers.Projection("EPSG:27700") // TODO: Handle other projections
+            );
+            $("form#report_inspect_form input[name=northing]").val(bng.y.toFixed(1));
+            $("form#report_inspect_form input[name=easting]").val(bng.x.toFixed(1));
+            $("form#report_inspect_form input[name=latitude]").val(lonlat.y);
+            $("form#report_inspect_form input[name=longitude]").val(lonlat.x);
+        });
+    }
+
     function onload() {
         if ( fixmystreet.area.length ) {
             for (var i=0; i<fixmystreet.area.length; i++) {
@@ -425,6 +444,10 @@ var fixmystreet = fixmystreet || {};
             drag.activate();
         }
         fixmystreet.map.addLayer(fixmystreet.markers);
+
+        if (fixmystreet.page == "report") {
+            setup_inspector_marker_drag();
+        }
 
         if ( fixmystreet.zoomToBounds ) {
             zoomToBounds( fixmystreet.markers.getDataExtent() );
