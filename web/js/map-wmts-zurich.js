@@ -114,6 +114,10 @@ fixmystreet.maps.matrix_ids = [
 ];
 
 (function() {
+    function pin_dragged(lonlat) {
+        document.getElementById('fixmystreet.latitude').value = lonlat.y;
+        document.getElementById('fixmystreet.longitude').value = lonlat.x;
+    }
 
     $(function(){
         $('#map_layer_toggle').toggle(function(){
@@ -127,9 +131,9 @@ fixmystreet.maps.matrix_ids = [
         /* Admin dragging of pin */
         if (fixmystreet.page == 'admin') {
             if ($.browser.msie) {
-                $(window).load(fixmystreet.maps.admin_drag);
+                $(window).load(function() { fixmystreet.maps.admin_drag(pin_dragged); });
             } else {
-                fixmystreet.maps.admin_drag();
+                fixmystreet.maps.admin_drag(pin_dragged);
             }
         }
     });

@@ -138,8 +138,17 @@ var fixmystreet = fixmystreet || {};
         }
       },
 
-      admin_drag: function() {
+      // Handle a single report pin being moved by dragging it on the map.
+      // pin_moved_callback is called with a new EPSG:4326 OpenLayers.LonLat if
+      // the user drags the pin and confirms its new location.
+      admin_drag: function(pin_moved_callback) {
+          var original_lonlat;
           var drag = new OpenLayers.Control.DragFeature( fixmystreet.markers, {
+              onStart: function(feature, e) {
+                  // Keep track of where the feature started, so we can put it
+                  // back if the user cancels the operation.
+                  original_lonlat = new OpenLayers.LonLat(feature.geometry.x, feature.geometry.y);
+              },
               onComplete: function(feature, e) {
                   var lonlat = feature.geometry.clone();
                   lonlat.transform(
@@ -147,18 +156,11 @@ var fixmystreet = fixmystreet || {};
                       new OpenLayers.Projection("EPSG:4326")
                   );
                   if (window.confirm( translation_strings.correct_position ) ) {
-                      // Store new co-ordinates
-                      document.getElementById('fixmystreet.latitude').value = lonlat.y;
-                      document.getElementById('fixmystreet.longitude').value = lonlat.x;
+                      // Let the callback know about the newly confirmed position
+                      pin_moved_callback(lonlat);
                   } else {
                       // Put it back
-                      var lat = document.getElementById('fixmystreet.latitude').value;
-                      var lon = document.getElementById('fixmystreet.longitude').value;
-                      lonlat = new OpenLayers.LonLat(lon, lat).transform(
-                          new OpenLayers.Projection("EPSG:4326"),
-                          fixmystreet.map.getProjectionObject()
-                      );
-                      fixmystreet.markers.features[0].move(lonlat);
+                      fixmystreet.markers.features[0].move(original_lonlat);
                   }
               }
           } );
