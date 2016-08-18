@@ -53,6 +53,27 @@
           </li>
         [% END %]
 
+        [% IF areas %]
+          <li>
+            <div class="admin-hint">
+              <p>
+                [% loc(
+                  "Normal (public) users should not be associated with any <strong>area</strong>.<br>
+                  Authorised staff users can be associated with the area in which they operate.")
+                %]
+              </p>
+            </div>
+            [% loc('Area:') %]
+            <select id='area_id' name='area_id' [% 'disabled' UNLESS c.user.has_permission_to('user_assign_areas', user.from_body.id) %]>
+              <option value=''>[% loc('No area') %]</option>
+              [% FOREACH area IN areas %]
+                <option value="[% area.id %]"[% ' selected' IF area.id == user.area_id %]>[% area.name | html %]</option>
+              [% END %]
+            </select>
+          </li>
+        [% END %]
+
+
       [% IF c.cobrand.moniker != 'zurich' %]
         <li>
           <div class="admin-hint">
