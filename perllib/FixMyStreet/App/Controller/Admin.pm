@@ -10,6 +10,7 @@ use Digest::SHA qw(sha1_hex);
 use mySociety::EmailUtil qw(is_valid_email);
 use DateTime::Format::Strptime;
 use List::Util 'first';
+use Data::Dumper;
 
 
 use FixMyStreet::SendReport;
@@ -764,12 +765,7 @@ sub report_edit : Path('report_edit') : Args(1) {
         }
         $problem->set_inflated_columns(\%columns);
 
-        if ((my $category = $c->get_param('category')) ne $problem->category) {
-            $problem->category($category);
-            my @contacts = grep { $_->category eq $problem->category } @{$c->stash->{contacts}};
-            my $bs = join( ',', map { $_->body_id } @contacts );
-            $problem->bodies_str($bs);
-        }
+        $c->forward( '/admin/report_edit_category', [ $problem ] );
 
         if ( $c->get_param('email') ne $problem->user->email ) {
             my $user = $c->model('DB::User')->find_or_create(
@@ -810,6 +806,73 @@ sub report_edit : Path('report_edit') : Args(1) {
         $problem->discard_changes;
     }
 
+    return 1;
+}
+
+=head2 report_edit_category
+
+Handles changing a problem's category and the complexity that comes with it.
+
+=cut
+
+sub report_edit_category : Private {
+    my ($self, $c, $problem) = @_;
+
+    # TODO: It's possible to assign a category belonging to a district
+    # council, meaning a 404 when the page is reloaded because the
+    # problem is no longer included in the current cobrand's
+    # problem_restriction.
+    # See mysociety/fixmystreetforcouncils#44
+    # We could
+    #  a) only allow the current body's categories to be chosen,
+    #  b) show a warning about the impending change of body
+    #  c) bounce the user to the report page on fms.com
+    # Not too worried about this right now, as it forms part of a bigger
+    # concern outlined in the above ticket and
+    # mysociety/fixmystreetforcouncils#17
+    if ((my $category = $c->get_param('category')) ne $problem->category) {
+        $problem->category($category);
+        my @contacts = grep { $_->category eq $problem->category } @{$c->stash->{contacts}};
+        my $bs = join( ',', map { $_->body_id } @contacts );
+        $problem->bodies_str($bs);
+    }
+}
+
+=head2 report_edit_location
+
+Handles changing a problem's location and the complexity that comes with it.
+For now, we reject the new location if the new location and old locations aren't
+covered by the same body.
+
+Returns 1 if the new position (if any) is acceptable, undef otherwise.
+
+NB: This must be called before report_edit_category, as that might modify
+$problem->bodies_str.
+
+=cut
+
+sub report_edit_location : Private {
+    my ($self, $c, $problem) = @_;
+
+    $c->log->debug("report_edit_location");
+    return 1 unless $c->forward('/report/new/determine_location');
+    $c->log->debug("made it past determine_location");
+
+    if ( $c->stash->{latitude} != $problem->latitude || $c->stash->{longitude} != $problem->longitude ) {
+        $c->log->debug("lat/lon have changed");
+        $c->forward('/report/new/setup_categories_and_bodies');
+        my %allowed_bodies = map { $_ => 1 } @{$problem->bodies_str_ids};
+        $c->log->debug(Dumper(%allowed_bodies));
+        my @new_bodies = keys %{ $c->stash->{bodies} };
+        $c->log->debug(Dumper(@new_bodies));
+        my $bodies_match = grep { exists( $allowed_bodies{$_} ) } @new_bodies;
+        $c->log->debug(Dumper($bodies_match));
+        return unless $bodies_match;
+        $c->log->debug("bodies_match is true");
+        $problem->latitude($c->stash->{latitude});
+        $problem->longitude($c->stash->{longitude});
+    }
+    $c->log->debug("done report_edit_location");
     return 1;
 }
 

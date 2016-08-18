@@ -303,8 +303,8 @@ $.extend(fixmystreet.set_up, {
     });
   },
 
-  geolocation: function() {
-    if (geo_position_js.init()) {
+  postcode_form_geolocation: function() {
+    if (geo_position_js.init() && $('#postcodeForm').length) {
         var link = '<a href="LINK" id="geolocate_link">&hellip; ' + translation_strings.geolocate + '</a>';
         $('form[action="/alert/list"]').append(link.replace('LINK','/alert/list'));
         if ($('body.frontpage').length) {
@@ -328,6 +328,48 @@ $.extend(fixmystreet.set_up, {
                 var longitude = pos.coords.longitude;
                 var page = $link.attr('href');
                 location.href = page + '?latitude=' + latitude + ';longitude=' + longitude;
+            }, function(err) {
+                $link.find('img').remove();
+                if (err.code == 1) { // User said no
+                    $link.html(translation_strings.geolocation_declined);
+                } else if (err.code == 2) { // No position
+                    $link.html(translation_strings.geolocation_no_position);
+                } else if (err.code == 3) { // Too long
+                    $link.html(translation_strings.geolocation_no_result);
+                } else { // Unknown
+                    $link.html(translation_strings.geolocation_unknown);
+                }
+            }, {
+                enableHighAccuracy: true,
+                timeout: 10000
+            });
+        });
+    }
+  },
+
+  report_inspect_geolocation: function() {
+    if (geo_position_js.init() && $('form#report_inspect_form').length) {
+        $('#geolocate_link').click(function(e) {
+            var $link = $(this);
+            e.preventDefault();
+            // Spinny thing!
+            if($('.mobile').length){
+                $link.append(' <img src="/cobrands/fixmystreet/images/spinner-black.gif" alt="" align="bottom">');
+            }else{
+                var spincolor = $('<span>').css("color","white").css("color") === $('#front-main').css("background-color")? 'white' : 'yellow';
+                $link.append(' <img src="/cobrands/fixmystreet/images/spinner-' + spincolor + '.gif" alt="" align="bottom">');
+            }
+            geo_position_js.getCurrentPosition(function(pos) {
+                $link.find('img').remove();
+                var latlon = new OpenLayers.LonLat(pos.coords.longitude, pos.coords.latitude);
+                var bng = latlon.clone().transform(
+                    new OpenLayers.Projection("EPSG:4326"),
+                    new OpenLayers.Projection("EPSG:27700") // TODO: Handle other projections
+                );
+                $("form#report_inspect_form input[name=northing]").val(bng.lat.toFixed(1));
+                $("form#report_inspect_form input[name=easting]").val(bng.lon.toFixed(1));
+                $("form#report_inspect_form input[name=latitude]").val(latlon.lat);
+                $("form#report_inspect_form input[name=longitude]").val(latlon.lon);
             }, function(err) {
                 $link.find('img').remove();
                 if (err.code == 1) { // User said no
