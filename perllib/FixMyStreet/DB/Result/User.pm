@@ -92,10 +92,21 @@ __PACKAGE__->has_many(
   { "foreign.user_id" => "self.id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
+__PACKAGE__->has_many(
+  "user_planned_reports",
+  "FixMyStreet::DB::Result::UserPlannedReport",
+  { "foreign.user_id" => "self.id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
 
 
 # Created by DBIx::Class::Schema::Loader v0.07035 @ 2016-08-03 13:52:28
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:SX8BS91mWHoOm2oWdNth1w
+
+use Moo;
+use mySociety::EmailUtil;
+
+__PACKAGE__->many_to_many( planned_reports => 'user_planned_reports', 'report' );
 
 __PACKAGE__->add_columns(
     "password" => {
@@ -105,8 +116,6 @@ __PACKAGE__->add_columns(
         encode_check_method => 'check_password',
     },
 );
-
-use mySociety::EmailUtil;
 
 sub latest_anonymity {
     my $self = shift;
@@ -277,6 +286,35 @@ sub adopt {
 
     # Delete the now empty user
     $other->delete;
+}
+
+# Planned reports
+
+# Override the default auto-created function as we only want one live entry per user
+around add_to_planned_reports => sub {
+    my ( $orig, $self ) = ( shift, shift );
+    my ( $report_col ) = @_;
+    my $existing = $self->user_planned_reports->search_rs({ report_id => $report_col->{id}, removed => undef })->first;
+    return $existing if $existing;
+    return $self->$orig(@_);
+};
+
+# Override the default auto-created function as we don't want to ever delete anything
+around remove_from_planned_reports => sub {
+    my ($orig, $self, $report) = @_;
+    $self->user_planned_reports
+        ->search_rs({ report_id => $report->id, removed => undef })
+        ->update({ removed => \'current_timestamp' });
+};
+
+sub active_planned_reports {
+    my $self = shift;
+    $self->planned_reports->search({ removed => undef });
+}
+
+sub is_planned_report {
+    my ($self, $problem) = @_;
+    return $self->active_planned_reports->find({ id => $problem->id });
 }
 
 1;
