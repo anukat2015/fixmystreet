@@ -38,6 +38,11 @@ sub index : Path : Args(0) {
     # Check if we have a partial report
     my $partial_report = $c->forward('load_partial');
 
+    # Check if the user is searching for a report by ID
+    if ( $c->get_param('pc') =~ /^\s*ref:(\d+)\s*$/ ) {
+        $c->go('/report/lookup_by_ref', [ $1 ]);
+    }
+
     # Try to create a location for whatever we have
     my $ret = $c->forward('/location/determine_location_from_coords')
         || $c->forward('/location/determine_location_from_pc');

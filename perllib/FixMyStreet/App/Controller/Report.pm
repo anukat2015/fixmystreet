@@ -380,6 +380,24 @@ sub check_has_permission_to : Private {
         unless $c->user_exists && $c->user->has_permission_to($permission, $bodies);
 };
 
+sub lookup_by_ref : Private {
+    my ( $self, $c, $ref ) = @_;
+
+    my $problems = $c->cobrand->problems->search([
+        id => $ref,
+        external_id => $ref
+    ]);
+
+    if ( $problems->count == 0) {
+        $c->detach( '/page_error_404_not_found', [] );
+    } elsif ( $problems->count == 1 ) {
+        $c->res->redirect( $c->uri_for( '/report', $problems->first->id ) );
+    } else {
+        $c->stash->{ref} = $ref;
+        $c->stash->{matching_reports} = [ $problems->all ];
+    }
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
