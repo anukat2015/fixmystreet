@@ -39,7 +39,7 @@ sub index : Path : Args(0) {
     my $partial_report = $c->forward('load_partial');
 
     # Check if the user is searching for a report by ID
-    if ( $c->get_param('pc') =~ /^\s*ref:(\d+)\s*$/ ) {
+    if ( $c->get_param('pc') =~ $c->cobrand->lookup_by_ref_regex ) {
         $c->go('lookup_by_ref', [ $1 ]);
     }
 
