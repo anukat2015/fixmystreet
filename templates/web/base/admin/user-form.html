@@ -1,4 +1,4 @@
-<form method="post" action="[% c.uri_for( 'user_edit', user.id ) %]" enctype="application/x-www-form-urlencoded" accept-charset="utf-8">
+<form method="post" id="user_edit" action="[% c.uri_for( 'user_edit', user.id ) %]" enctype="application/x-www-form-urlencoded" accept-charset="utf-8">
     <input type="hidden" name="token" value="[% csrf_token %]" >
     <input type="hidden" name="submit" value="1" >
 
@@ -38,7 +38,7 @@
             [% loc('Body:') %] <select id='body' name='body'>
               <option value=''>[% loc('No body') %]</option>
           [% FOR body IN bodies %]
-              <option value="[% body.id %]"[% ' selected' IF body.id == user.from_body.id %]>[% body.name %]</option>
+              <option value="[% body.id %]"[% ' selected data-originally-selected' IF body.id == user.from_body.id %]>[% body.name %]</option>
           [% END %]
           </select>
         </li>
