@@ -1197,7 +1197,7 @@ sub user_edit : Path('user_edit') : Args(1) {
         if ( $user->from_body && $c->user->has_permission_to('user_assign_areas', $user->from_body->id) ) {
             my %valid_areas = map { $_->{id} => 1 } @{ $c->stash->{areas} };
             my $new_area = $c->get_param('area_id');
-            $user->area_id( exists($valid_areas{$new_area}) ? $new_area : undef );
+            $user->area_id( $valid_areas{$new_area} ? $new_area : undef );
         }
 
         unless ($user->email) {
